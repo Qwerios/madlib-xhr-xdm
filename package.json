@@ -1,0 +1,34 @@
+{
+  "name": "madlib-xhr-xdm",
+  "description": "The Cross Domain barrier breaking version of madlib-xhr. Needs an xdm provider to be placed on the target server. This is the third (V3) iterations of our jXDM solution. This client should be backwards compatible with V2 providers.",
+  "main": "lib/xdm.js",
+  "version": "0.1.0",
+  "author": {
+    "name": "Mark Doeswijk",
+    "email": "mark.doeswijk@marviq.com",
+    "url": "https://github.com/Marviq"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "command -v grunt >/dev/null 2>&1 && grunt || { echo >&2 'Grunt is not installed'; }"
+  },
+  "devDependencies": {
+    "grunt-contrib-watch": "~0.3.1",
+    "grunt-contrib-coffee": "~0.6.0",
+    "grunt": "~0.4.1",
+    "coffee-script": "~1.6.3",
+    "chai": "~1.8.1",
+    "grunt-mocha-test": "~0.8.2"
+  },
+  "dependencies": {
+    "madlib-xhr": "~0.1.0",
+    "q": "~1.0.0",
+    "madlib-shim-easyxdm": "~2.4.18-25",
+    "madlib-hostmapping": "~0.1.6"
+  },
+  "licenses": [
+    {
+      "type": "BSD"
+    }
+  ]
+}

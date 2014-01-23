@@ -1,0 +1,289 @@
+# The XDM variant of the browser XHR. If an xdm settings section exists for the
+# called url we will use the easyXDM based fall back
+#
+( ( factory ) ->
+    if typeof exports is "object"
+        module.exports = factory(
+            require "madlib-console"
+            require "q"
+            require "madlib-xhr"
+            require "madlib-shim-easyxdm"
+            require "madlib-hostmapping"
+        )
+    else if typeof define is "function" and define.amd
+        define( [
+            "madlib-console"
+            "q"
+            "madlib-xhr"
+            "madlib-shim-easyxdm"
+            "madlib-hostmapping"
+        ], factory )
+
+)( ( console, Q, XHR, easyXDMShim, HostMapping ) ->
+
+    # XDM channels are managed and reused per host. This array holds the channel pool
+    #
+    xdmChannelPool = []
+
+    # The XDM variant of xhr uses our custom easyXDM based fall back for older
+    # browsers that don't support CORS.
+    # The XDM channel is also used if the service provider doesn't support CORS.
+    #
+    # Keep in mind you need a valid entry in the settings module and provider
+    # files need to be deployed on the server. This module transparently supports
+    # older v2 providers
+    #
+    class XDM extends XHR
+        @xdmChannel
+        @xdmSettings
+        @hostMapping
+
+        constructor: ( settings ) ->
+            super( settings )
+            @hostMapping = new HostMapping( @settings )
+
+        isXDMCall: () ->
+            not @transport?
+
+        createXDMChannel: ( url, callback ) ->
+            hostName     = hostMapping.extractHostName( url )
+            hostBaseUrl  = url.substr( 0, url.lastIndexOf( "/" ) + 1 )
+            swfUrl       = hostBaseUrl + "easyxdm.swf"
+
+            # Check if there is an existing channel
+            #
+            return xdmChannelPool[ hostName ] if xdmChannelPool[ hostName ]?
+
+            # Create a new XDM channel
+            #
+            options =
+                remote:     @xdmSettings.xdmProvider
+                swf:        swfUrl
+                onReady:    callback
+
+            rpcChannel =
+                remote:
+                    ping:           {}
+                    request:        {}
+                    getCookie:      {}
+                    setCookie:      {}
+                    deleteCookie:   {}
+
+            # easyXDM is not a CommonJS module. The shim we required ensures
+            # the global object is available
+            #
+            remote = new window.easyXDM.Rpc( options, rpcChannel )
+
+            # Add the channel to the pool for future use
+            #
+            xdmChannelPool[ hostName ] = remote
+
+            return remote
+
+        open: ( method, url, user, password ) ->
+            # NOTE: We are not calling @createTransport here as the base class does
+            #
+            # Retrieve the XDM settings for the target host
+            #
+            @xdmSettings = hostMapping.getXdmSettings( url ) || {}
+
+            # Check if the host is present in the xdm settings
+            #
+            if not @xdmSettings?
+                # Not an XDM call
+                # Use the super class to create an XHR transport
+                # The existence of an @transport indicates a non XDM call
+                #
+                super( method, url, user, password )
+
+            else
+                # If the xdmSettings indicate the server should have CORS and if
+                # the browser supports it we don't have to use the XDM channel.
+                # In an application that uses different servers it can happen that
+                # the xdm enabled xhr is used for some and not for others
+                #
+                if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+                    console.log( "[XDM] Open using available CORS support" )
+
+                    # Use CORS instead
+                    #
+                    super( method, url, user, password )
+                else
+                    # Clear @transport in case someone is reusing this XHR instance
+                    #
+                    @transport = null
+
+                    # Get or create the XML channel
+                    #
+                    @xdmChannel = @createXDMChannel( url )
+
+                    @request =
+                        headers:    {}
+                        url:        url
+                        method:     method
+                        timeout:    @timeout
+
+                    @request.username = username if username?
+                    @request.password = password if password?
+
+        send: ( data ) ->
+            if not @isXDMCall()
+                # Not an XDM call so let the base XHR handle the request
+                #
+                super( data )
+            else
+                @deferred     = Q.defer()
+                @request.data = data
+
+                # All calls using the XDM channel need to be marshalled as text
+                # So when constructing an answer we need to handle the conversion
+                # to what the caller expects (XML Document, Object, etc)
+                #
+                # Prepare the call using the parameters in @request
+                #
+                parameters =
+                    url:            @request.url
+                    accepts:        @request.accepts
+                    contentType:    @request.contentType
+                    headers:        @request.headers
+                    data:           data
+                    cache:          @request.cache
+                    timeout:        @request.timeout
+                    username:       @request.username
+                    password:       @request.password
+
+                # V2 XDM providers use jQuery style parameters
+                # V3 XDM providers use MAD XHR parameters
+                #
+                # Translation from MAD to jQuery is:
+                # * type   -> dataType
+                # * method -> type
+                #
+                # NOTE: The use of headers requires a jQuery 1.5+ XDM provider
+                if ( @xdmSettings.xdmVersion < 3 )
+                    parameters.dataType = @request.type
+                    parameters.type     = @request.method
+                else
+                    parameters.type     = @request.type
+                    parameters.method   = @request.method
+
+                # Start the request timeout check
+                # This is our failsafe timeout check
+                # If timeout is set to 0 it means we will wait indefinitely
+                # XDM timout is half a second more then normal XHR because
+                # the XHR fallback timeout on the other side of the channel
+                # might also occur and there could be a small delay due to
+                # transport
+                #
+                if @timeout isnt 0
+                    @timer = setTimeout( =>
+                        @createTimeoutResponse()
+                    , @timeout + 1500 )
+
+                # Do the XHR call
+                #
+                try
+                    @xdmChannel.request( parameters, ( response ) =>
+                        console.log( "[XDM] consumer success", response )
+
+                        # Convert XDM V2 response format
+                        #
+                        response = @convertV2Response( response ) if ( @xdmSettings.xdmVersion < 3 )
+
+                        @createSuccessResponse( response )
+
+                    ,   ( error ) =>
+                        console.log( "[XDM] consumer error", error )
+
+                        # Convert XDM V2 response format
+                        #
+                        error = @convertV2Response( error ) if ( @xdmSettings.xdmVersion < 3 )
+
+                        @createErrorResponse( error )
+                    )
+
+                catch xhrError
+                    # NOTE: Consuming exceptions might not be the way to go here
+                    # But this way the promise will be rejected as expected
+                    #
+                    console.error( "[XHR] Error during request", xhrError )
+
+
+                return @deferred.promise
+
+        convertV2Response: ( response ) ->
+            xhr = response.xhr
+
+            newResponse =
+                request:    @request
+                response:   xhr.responseText
+                status:     xhr.status
+                statusText: xhr.statusText
+
+        createSuccessResponse: ( xhrResponse ) ->
+            if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+                super( xhrResponse )
+            else
+                # Some XHR don't implement .response so fall-back to .responseText
+                #
+                response = xhrResponse.response || xhrResponse.responseText
+                status   = parseInt( xhrResponse.status, 10 )
+
+                if @request.type is "json" and typeof response is "string"
+
+                    # Try to parse the JSON response
+                    # Can be empty for 204 no content response
+                    #
+                    if response
+                        try
+                            response = JSON.parse( response )
+
+                        catch jsonError
+                            console.warn( "[XHR] Failed JSON parse, returning plain text", @request.url )
+                            response = xhrResponse.responseText
+
+                else if @request.type is "xml" and typeof response is "string"
+
+                    # Try to parse the XML response
+                    #
+                    if response
+                        try
+                            response = JSON.parse( response )
+
+                        catch xmlError
+                            console.warn( "[XHR] Failed XML parse, returning plain text", @request.url )
+                            response = xhrResponse.responseText
+
+                # A successful XDM channel response can still be an XHR error response
+                #
+                if ( status >= 200 and status < 300 ) or status is 1223
+
+                    # Internet Explorer mangles the 204 no content status code
+                    #
+                    status = 204 if status is 1233
+
+                    @deferred.resolve(
+                        request:    @request
+                        response:   response
+                        status:     status
+                        statusText: xhrResponse.statusText
+                    )
+                else
+                    @deferred.reject(
+                        request:    @request
+                        response:   response
+                        status:     status
+                        statusText: xhrResponse.statusText
+                    )
+
+        createErrorResponse: ( xhrResponse ) ->
+            if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+                super( xhrResponse )
+            else
+                @deferred.reject(
+                    request:    @request
+                    response:   xhrResponse.responseText || xhrResponse.statusText
+                    status:     xhrResponse.status
+                    statusText: xhrResponse.statusText
+                )
+)
