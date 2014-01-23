@@ -9,6 +9,7 @@
             require "madlib-xhr"
             require "madlib-shim-easyxdm"
             require "madlib-hostmapping"
+            require "madlib-xmldom"
         )
     else if typeof define is "function" and define.amd
         define( [
@@ -17,9 +18,10 @@
             "madlib-xhr"
             "madlib-shim-easyxdm"
             "madlib-hostmapping"
+            "madlib-xmldom"
         ], factory )
 
-)( ( console, Q, XHR, easyXDMShim, HostMapping ) ->
+)( ( console, Q, XHR, easyXDMShim, HostMapping, xmldom ) ->
 
     # XDM channels are managed and reused per host. This array holds the channel pool
     #
@@ -163,8 +165,9 @@
                 # * method -> type
                 #
                 # NOTE: The use of headers requires a jQuery 1.5+ XDM provider
+                #
                 if ( @xdmSettings.xdmVersion < 3 )
-                    parameters.dataType = @request.type
+                    parameters.dataType = "text"
                     parameters.type     = @request.method
                 else
                     parameters.type     = @request.type
@@ -251,7 +254,7 @@
                     #
                     if response
                         try
-                            response = JSON.parse( response )
+                            response = xmldom.parse( response )
 
                         catch xmlError
                             console.warn( "[XHR] Failed XML parse, returning plain text", @request.url )
