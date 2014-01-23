@@ -46,7 +46,7 @@
             not @transport?
 
         createXDMChannel: ( url, callback ) ->
-            hostName     = hostMapping.extractHostName( url )
+            hostName     = @hostMapping.extractHostName( url )
             hostBaseUrl  = url.substr( 0, url.lastIndexOf( "/" ) + 1 )
             swfUrl       = hostBaseUrl + "easyxdm.swf"
 
@@ -85,7 +85,7 @@
             #
             # Retrieve the XDM settings for the target host
             #
-            @xdmSettings = hostMapping.getXdmSettings( url ) || {}
+            @xdmSettings = @hostMapping.getXdmSettings( url ) || {}
 
             # Check if the host is present in the xdm settings
             #
