@@ -40,12 +40,13 @@
 
         constructor: ( settings ) ->
             super( settings )
-            @hostMapping = new HostMapping( @settings )
+            @hostMapping = new HostMapping( settings )
 
         isXDMCall: () ->
             not @transport?
 
-        createXDMChannel: ( url, callback ) ->
+        createXDMChannel: ( callback ) ->
+            url          = @xdmSettings.xdmProvider
             hostName     = @hostMapping.extractHostName( url )
             hostBaseUrl  = url.substr( 0, url.lastIndexOf( "/" ) + 1 )
             swfUrl       = hostBaseUrl + "easyxdm.swf"
@@ -54,10 +55,12 @@
             #
             return xdmChannelPool[ hostName ] if xdmChannelPool[ hostName ]?
 
+            console.log( "[XDM] Create channel: #{@xdmSettings.xdmProvider}" );
+
             # Create a new XDM channel
             #
             options =
-                remote:     @xdmSettings.xdmProvider
+                remote:     url
                 swf:        swfUrl
                 onReady:    callback
 
@@ -85,7 +88,7 @@
             #
             # Retrieve the XDM settings for the target host
             #
-            @xdmSettings = @hostMapping.getXdmSettings( url ) || {}
+            @xdmSettings = @hostMapping.getXdmSettings( url )
 
             # Check if the host is present in the xdm settings
             #
@@ -109,13 +112,13 @@
                     #
                     super( method, url, user, password )
                 else
-                    # Clear @transport in case someone is reusing this XHR instance
+                    # Clear @transport in case someone is reusing this XHR instance (bad boy!)
                     #
                     @transport = null
 
                     # Get or create the XML channel
                     #
-                    @xdmChannel = @createXDMChannel( url )
+                    @xdmChannel = @createXDMChannel()
 
                     @request =
                         headers:    {}
