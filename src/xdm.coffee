@@ -35,11 +35,11 @@
 
         # XDM channels are managed and reused per host. This array holds the channel pool
         #
-        xdmChannelPool: []
+        @xdmChannelPool = {}
 
-        xdmChannel
-        xdmSettings
-        hostMapping
+        @xdmChannel
+        @xdmSettings
+        @hostMapping
 
         constructor: ( settings ) ->
             super( settings )
@@ -48,7 +48,7 @@
         isXDMCall: () ->
             not @transport?
 
-        createXDMChannel: ( callback ) ->
+        createXDMChannel: ( callback ) =>
             url          = @xdmSettings.xdmProvider
             hostName     = @hostMapping.extractHostName( url )
             hostBaseUrl  = url.substr( 0, url.lastIndexOf( "/" ) + 1 )
