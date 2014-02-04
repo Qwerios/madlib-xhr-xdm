@@ -35,11 +35,11 @@
 
         # XDM channels are managed and reused per host. This array holds the channel pool
         #
-        @xdmChannelPool = []
+        xdmChannelPool: []
 
-        @xdmChannel
-        @xdmSettings
-        @hostMapping
+        xdmChannel
+        xdmSettings
+        hostMapping
 
         constructor: ( settings ) ->
             super( settings )
