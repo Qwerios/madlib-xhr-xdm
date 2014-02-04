@@ -23,10 +23,6 @@
 
 )( ( console, Q, XHR, easyXDMShim, HostMapping, xmldom ) ->
 
-    # XDM channels are managed and reused per host. This array holds the channel pool
-    #
-    xdmChannelPool = []
-
     # The XDM variant of xhr uses our custom easyXDM based fall back for older
     # browsers that don't support CORS.
     # The XDM channel is also used if the service provider doesn't support CORS.
@@ -36,6 +32,11 @@
     # older v2 providers
     #
     class XDM extends XHR
+
+        # XDM channels are managed and reused per host. This array holds the channel pool
+        #
+        @xdmChannelPool = []
+
         @xdmChannel
         @xdmSettings
         @hostMapping
@@ -55,7 +56,7 @@
 
             # Check if there is an existing channel
             #
-            return xdmChannelPool[ hostName ] if xdmChannelPool[ hostName ]?
+            return @xdmChannelPool[ hostName ] if @xdmChannelPool[ hostName ]?
 
             console.log( "[XDM] Create channel: #{@xdmSettings.xdmProvider}" );
 
@@ -81,7 +82,7 @@
 
             # Add the channel to the pool for future use
             #
-            xdmChannelPool[ hostName ] = remote
+            @xdmChannelPool[ hostName ] = remote
 
             return remote
 
