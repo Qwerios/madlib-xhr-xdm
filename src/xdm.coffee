@@ -32,10 +32,9 @@
     # older v2 providers
     #
     class XDM extends XHR
-
         # XDM channels are managed and reused per host. This array holds the channel pool
         #
-        @xdmChannelPool = {}
+        xdmChannelPool = {}
 
         @xdmChannel
         @xdmSettings
@@ -48,7 +47,7 @@
         isXDMCall: () ->
             not @transport?
 
-        createXDMChannel: ( callback ) =>
+        createXDMChannel: ( callback ) ->
             url          = @xdmSettings.xdmProvider
             hostName     = @hostMapping.extractHostName( url )
             hostBaseUrl  = url.substr( 0, url.lastIndexOf( "/" ) + 1 )
@@ -56,7 +55,7 @@
 
             # Check if there is an existing channel
             #
-            return @xdmChannelPool[ hostName ] if @xdmChannelPool[ hostName ]?
+            return xdmChannelPool[ hostName ] if xdmChannelPool[ hostName ]?
 
             console.log( "[XDM] Create channel: #{@xdmSettings.xdmProvider}" );
 
@@ -82,7 +81,7 @@
 
             # Add the channel to the pool for future use
             #
-            @xdmChannelPool[ hostName ] = remote
+            xdmChannelPool[ hostName ] = remote
 
             return remote
 
