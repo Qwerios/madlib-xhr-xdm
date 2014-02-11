@@ -23,10 +23,6 @@
 
 )( ( console, Q, XHR, easyXDMShim, HostMapping, xmldom ) ->
 
-    # XDM channels are managed and reused per host. This array holds the channel pool
-    #
-    xdmChannelPool = []
-
     # The XDM variant of xhr uses our custom easyXDM based fall back for older
     # browsers that don't support CORS.
     # The XDM channel is also used if the service provider doesn't support CORS.
@@ -36,13 +32,22 @@
     # older v2 providers
     #
     class XDM extends XHR
-        @xdmChannel
-        @xdmSettings
-        @hostMapping
 
         constructor: ( settings ) ->
             super( settings )
-            @hostMapping = new HostMapping( settings )
+            @hostMapping    = new HostMapping( settings )
+
+            # XDM channels are managed and reused per host.
+            # Because multiple versions of the XDM module may exist we need to expose
+            # the shared channels on a global variable.
+            # Since XDM is a browser only thing we can use the window object directly
+            #
+            if not window.xdmChannelPool?
+                window.xdmChannelPool = {}
+
+            @xdmChannelPool = window.xdmChannelPool
+            @xdmChannel
+            @xdmSettings
 
         isXDMCall: () ->
             not @transport?
@@ -55,9 +60,11 @@
 
             # Check if there is an existing channel
             #
-            return xdmChannelPool[ hostName ] if xdmChannelPool[ hostName ]?
+            if @xdmChannelPool[ hostName ]?
+                console.log( "[XDM] Found existing channel for: #{@xdmSettings.xdmProvider}" )
+                return @xdmChannelPool[ hostName ]
 
-            console.log( "[XDM] Create channel: #{@xdmSettings.xdmProvider}" );
+            console.log( "[XDM] Creating channel for: #{@xdmSettings.xdmProvider}" );
 
             # Create a new XDM channel
             #
@@ -81,7 +88,7 @@
 
             # Add the channel to the pool for future use
             #
-            xdmChannelPool[ hostName ] = remote
+            @xdmChannelPool[ hostName ] = remote
 
             return remote
 
