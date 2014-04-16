@@ -80,7 +80,7 @@ settings.set( "xdmConfig", {
     ...
 } );
 
-hostMapping = new HostMapping( settings )
+var hostMapping = new HostMapping( settings )
 ```
 
 With all the configuration out of the way we can use the xdm variant of the xhr as a drop-in replacement for the normal madlib-xhr:
