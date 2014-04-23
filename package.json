@@ -2,7 +2,7 @@
   "name": "madlib-xhr-xdm",
   "description": "The Cross Domain barrier breaking version of madlib-xhr. Needs an xdm provider to be placed on the target server. This is the third (V3) iterations of our jXDM solution. This client should be backwards compatible with V2 providers.",
   "main": "lib/xdm.js",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "author": {
     "name": "Mark Doeswijk",
     "email": "mdoeswijk@gmail.com",
