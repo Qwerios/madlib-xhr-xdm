@@ -185,27 +185,40 @@
                     parameters.type     = @request.type
                     parameters.method   = @request.method
 
-                # Start the request timeout check
-                # This is our failsafe timeout check
-                # If timeout is set to 0 it means we will wait indefinitely
-                # XDM timout is half a second more then normal XHR because
-                # the XHR fallback timeout on the other side of the channel
-                # might also occur and there could be a small delay due to
-                # transport
-                #
-                if @timeout isnt 0
-                    @timer = setTimeout( =>
-                        @createTimeoutResponse()
-                    , @timeout + 1500 )
-
                 # Wait for a spot in XDM queue
                 #
                 window.xdmChannelQueue.ready()
                 .then( () =>
+                    # Start the request timeout check
+                    # This is our failsafe timeout check
+                    # If timeout is set to 0 it means we will wait indefinitely
+                    # XDM timout is half a second more then normal XHR because
+                    # the XHR fallback timeout on the other side of the channel
+                    # might also occur and there could be a small delay due to
+                    # transport
+                    #
+                    if @timeout isnt 0
+                        @timer = setTimeout( =>
+                            # Free up our spot in the queue
+                            #
+                            window.xdmChannelQueue.done()
+
+                            @createTimeoutResponse()
+                        , @timeout + 1500 )
+
                     # Do the XHR call
                     #
                     try
                         @xdmChannel.request( parameters, ( response ) =>
+
+                            # Free up our spot in the queue
+                            #
+                            window.xdmChannelQueue.done()
+
+                            # Stop the timeout fall-back
+                            #
+                            clearTimeout( @timer )
+
                             console.log( "[XDM] consumer success", response )
 
                             # Convert XDM V2 response format
@@ -213,9 +226,17 @@
                             response = @convertV2Response( response ) if ( @xdmSettings.xdmVersion < 3 )
 
                             @createSuccessResponse( response )
-                            window.xdmChannelQueue.ready()
 
                         ,   ( error ) =>
+
+                            # Free up our spot in the queue
+                            #
+                            window.xdmChannelQueue.done()
+
+                            # Stop the timeout fall-back
+                            #
+                            clearTimeout( @timer )
+
                             console.log( "[XDM] consumer error", error )
 
                             # Convert XDM V2 response format
@@ -223,15 +244,22 @@
                             error = @convertV2Response( error ) if ( @xdmSettings.xdmVersion < 3 )
 
                             @createErrorResponse( error )
-                            window.xdmChannelQueue.ready()
                         )
 
                     catch xhrError
+                        # Free up our spot in the queue
+                        #
+                        window.xdmChannelQueue.done()
+
+                        # Stop the timeout fall-back
+                        #
+                        clearTimeout( @timer )
+
                         # NOTE: Consuming exceptions might not be the way to go here
                         # But this way the promise will be rejected as expected
                         #
                         console.error( "[XHR] Error during request", xhrError )
-                        window.xdmChannelQueue.ready()
+                        return
                 )
                 .done()
 
