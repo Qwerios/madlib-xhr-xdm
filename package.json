@@ -25,11 +25,12 @@
     "grunt-mocha-test": "~0.8.2"
   },
   "dependencies": {
-    "madlib-xhr": "~0.1.0",
-    "q": "~1.0.0",
-    "madlib-shim-easyxdm": "~2.4.18-25",
     "madlib-hostmapping": "~0.1.6",
-    "madlib-xmldom": "~0.1.1"
+    "madlib-promise-queue": "^0.1.0",
+    "madlib-shim-easyxdm": "~2.4.18-25",
+    "madlib-xhr": "~0.1.0",
+    "madlib-xmldom": "~0.1.1",
+    "q": "~1.0.0"
   },
   "licenses": [
     {

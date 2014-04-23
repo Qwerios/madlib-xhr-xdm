@@ -10,6 +10,7 @@
             require "madlib-shim-easyxdm"
             require "madlib-hostmapping"
             require "madlib-xmldom"
+            require "madlib-promise-queue"
         )
     else if typeof define is "function" and define.amd
         define( [
@@ -19,9 +20,10 @@
             "madlib-shim-easyxdm"
             "madlib-hostmapping"
             "madlib-xmldom"
+            "madlib-promise-queue"
         ], factory )
 
-)( ( console, Q, XHR, easyXDMShim, HostMapping, xmldom ) ->
+)( ( console, Q, XHR, easyXDMShim, HostMapping, xmldom, Queue ) ->
 
     # The XDM variant of xhr uses our custom easyXDM based fall back for older
     # browsers that don't support CORS.
@@ -44,6 +46,9 @@
             #
             if not window.xdmChannelPool?
                 window.xdmChannelPool = {}
+
+            if not window.xdmChannelQueue?
+                window.xdmChannelQueue = new Queue( 1 )
 
             @xdmChannelPool = window.xdmChannelPool
             @xdmChannel
@@ -193,34 +198,42 @@
                         @createTimeoutResponse()
                     , @timeout + 1500 )
 
-                # Do the XHR call
+                # Wait for a spot in XDM queue
                 #
-                try
-                    @xdmChannel.request( parameters, ( response ) =>
-                        console.log( "[XDM] consumer success", response )
-
-                        # Convert XDM V2 response format
-                        #
-                        response = @convertV2Response( response ) if ( @xdmSettings.xdmVersion < 3 )
-
-                        @createSuccessResponse( response )
-
-                    ,   ( error ) =>
-                        console.log( "[XDM] consumer error", error )
-
-                        # Convert XDM V2 response format
-                        #
-                        error = @convertV2Response( error ) if ( @xdmSettings.xdmVersion < 3 )
-
-                        @createErrorResponse( error )
-                    )
-
-                catch xhrError
-                    # NOTE: Consuming exceptions might not be the way to go here
-                    # But this way the promise will be rejected as expected
+                window.xdmChannelQueue.ready()
+                .then( () =>
+                    # Do the XHR call
                     #
-                    console.error( "[XHR] Error during request", xhrError )
+                    try
+                        @xdmChannel.request( parameters, ( response ) =>
+                            console.log( "[XDM] consumer success", response )
 
+                            # Convert XDM V2 response format
+                            #
+                            response = @convertV2Response( response ) if ( @xdmSettings.xdmVersion < 3 )
+
+                            @createSuccessResponse( response )
+                            window.xdmChannelQueue.ready()
+
+                        ,   ( error ) =>
+                            console.log( "[XDM] consumer error", error )
+
+                            # Convert XDM V2 response format
+                            #
+                            error = @convertV2Response( error ) if ( @xdmSettings.xdmVersion < 3 )
+
+                            @createErrorResponse( error )
+                            window.xdmChannelQueue.ready()
+                        )
+
+                    catch xhrError
+                        # NOTE: Consuming exceptions might not be the way to go here
+                        # But this way the promise will be rejected as expected
+                        #
+                        console.error( "[XHR] Error during request", xhrError )
+                        window.xdmChannelQueue.ready()
+                )
+                .done()
 
                 return @deferred.promise
 
