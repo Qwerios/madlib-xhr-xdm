@@ -255,7 +255,7 @@
                             console.warn( "[XHR] Failed JSON parse, returning plain text", @request.url )
                             response = xhrResponse.responseText
 
-                else if @request.type is "xml" and typeof response is "string"
+                else if @request.type is "xml" and typeof response is "string" and response.substr( 0, 5 ) is "<?xml"
 
                     # Try to parse the XML response
                     #
