@@ -28,11 +28,12 @@ The Cross Domain version of the madlib XHR requires knowledge of the following o
 * [xhr](https://github.com/Qwerios/madlib-xhr)
 * [hostmapping](https://github.com/Qwerios/madlib-hostmapping)
 * [settings](https://github.com/Qwerios/madlib-settings)
+* [xdm-provider](https://github.com/Qwerios/madlib-xdm-provider)
 
 The basic premise of using the xdm variant is as that you declare where the cross domain bridge for a certain host can be found.
 You declare this with the madlib-settings module which in turn is picked up by the hostmapping module. The xhr-xdm module will pick-up on these settings when it detect the target host for you call has an xdm configuration.
 
-NOTE: You need an xdm provider installed on your server for this module to function.
+NOTE: You need an [xdm provider](https://github.com/Qwerios/madlib-xdm-provider) installed on your server for this module to function.
 
 First we setup the host mapping and xdm configuration using madlib-settings:
 
@@ -71,13 +72,13 @@ settings.set( "xdmConfig", {
     {
         cors:               false,
         xdmVersion:         3,
-        xdmProvider:        "https://api.myhost.com/xdm/services.html"
+        xdmProvider:        "https://api.myhost.com/xdm/v3/index.html"
     },
     "api-acc.myhost.com":
     {
         cors:               true,
         xdmVersion:         3,
-        xdmProvider:        "https://api-acc.myhost.com/xdm/services.html"
+        xdmProvider:        "https://api-acc.myhost.com/xdm/v3/index.html"
     }
     ...
 } );
