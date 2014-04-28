@@ -1,4 +1,8 @@
-# madlib-xhr-xdm [![Build Status](https://travis-ci.org/Qwerios/madlib-xhr-xdm.svg?branch=master)](https://travis-ci.org/Qwerios/madlib-xhr-xdm)
+# madlib-xhr-xdm
+[![Build Status](https://travis-ci.org/Qwerios/madlib-xhr-xdm.svg?branch=master)](https://travis-ci.org/Qwerios/madlib-xhr-xdm) [![NPM version](https://badge.fury.io/js/madlib-xhr-xdm.png)](http://badge.fury.io/js/madlib-xhr-xdm) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com/)
+
+[![Npm Downloads](https://nodei.co/npm/madlib-xhr-xdm.png?downloads=true&stars=true)](https://nodei.co/npm/madlib-xhr-xdm.png?downloads=true&stars=true)
+
 The Cross Domain barrier breaking version of madlib-xhr. Needs an xdm provider to be placed on the target server. This is the third (V3) iterations of our jXDM solution. This client should be backwards compatible with V2 providers.
 
 ## acknowledgments
@@ -119,7 +123,7 @@ Remember to add both madlib-xhr and madlib-xhr-xdm to your dependencies.
     "q": "~1.0.0",
     "madlib-object-utils": "~0.1.0",
     "madlib-xml-objectifier": "~0.1.2",
-    "madlib-console": "~0.1.1",
+    "madlib-xhr-xdm": "~0.1.1",
     "madlib-hostmapping": "~0.1.3",
     "madlib-xmldom": "~0.1.1",
     "madlib-xhr-xdm": "~0.1.0",
