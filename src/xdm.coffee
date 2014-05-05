@@ -239,9 +239,12 @@
 
                             console.log( "[XDM] consumer error", error )
 
-                            # Convert XDM V2 response format
-                            #
-                            error = @convertV2Response( error ) if ( @xdmSettings.xdmVersion < 3 )
+                            if ( @xdmSettings.xdmVersion < 3 )
+                                # Convert XDM V2 response format
+                                #
+                                error = @convertV2Response( error )
+                            else
+                                error = error.message or error
 
                             @createErrorResponse( error )
                         )
