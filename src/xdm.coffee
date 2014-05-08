@@ -278,8 +278,12 @@
                 statusText: xhr.statusText
 
         createSuccessResponse: ( xhrResponse ) ->
-            if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+            if not @xdmSettings?
                 super( xhrResponse )
+
+            else if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+                super( xhrResponse )
+
             else
                 # Some XHR don't implement .response so fall-back to .responseText
                 #
@@ -334,8 +338,12 @@
                     )
 
         createErrorResponse: ( xhrResponse ) ->
-            if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+            if not @xdmSettings?
                 super( xhrResponse )
+
+            else if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+                super( xhrResponse )
+
             else
                 @deferred.reject(
                     request:    @request
