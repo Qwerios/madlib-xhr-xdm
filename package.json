@@ -25,6 +25,7 @@
     "grunt-mocha-test": "~0.8.2"
   },
   "dependencies": {
+    "madlib-console": "^0.1.3",
     "madlib-hostmapping": "~0.1.6",
     "madlib-promise-queue": "^0.1.0",
     "madlib-shim-easyxdm": "~2.4.18-25",

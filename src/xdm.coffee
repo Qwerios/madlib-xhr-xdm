@@ -36,8 +36,14 @@
     class XDM extends XHR
 
         constructor: ( settings ) ->
+
+            # Let the base XHR class setup itself first
+            #
             super( settings )
-            @hostMapping    = new HostMapping( settings )
+
+            # Create our host mapping instance
+            #
+            @hostMapping = new HostMapping( settings )
 
             # XDM channels are managed and reused per host.
             # Because multiple versions of the XDM module may exist we need to expose
@@ -53,9 +59,6 @@
             @xdmChannelPool = window.xdmChannelPool
             @xdmChannel
             @xdmSettings
-
-        isXDMCall: () ->
-            not @transport?
 
         createXDMChannel: ( callback ) ->
             url          = @xdmSettings.xdmProvider
@@ -98,7 +101,7 @@
             return remote
 
         open: ( method, url, user, password ) ->
-            # NOTE: We are not calling @createTransport here as the base class does
+            # NOTE: We are not calling @createTransport here like the normal XHR does
             #
             # Retrieve the XDM settings for the target host
             #
@@ -106,7 +109,7 @@
 
             # Check if the host is present in the xdm settings
             #
-            if not @xdmSettings?
+            if not @xdmSettings? or @isSameOrigin( url )
                 # Not an XDM call
                 # Use the super class to create an XHR transport
                 # The existence of an @transport indicates a non XDM call
@@ -144,7 +147,7 @@
                     @request.password = password if password?
 
         send: ( data ) ->
-            if not @isXDMCall()
+            if @transport
                 # Not an XDM call so let the base XHR handle the request
                 #
                 super( data )
@@ -268,9 +271,27 @@
 
                 return @deferred.promise
 
+        isSameOrigin: ( url ) ->
+            # Check if window.location exists
+            # If it doesn't exist there should be no cross-domain restriction
+            #
+            isSameOrigin = true
+            if window? and document?
+                location    = window.location
+                aLink       = document.createElement( "a" )
+                aLink.href  = url
+
+                isSameOrigin =
+                    aLink.hostname   is location.hostname and
+                    aLink.port       is location.port     and
+                    aLink.protocol   is location.protocol
+
         convertV2Response: ( response ) ->
             xhr = response.xhr
 
+            # The V2 provider has a different mapping for the response data
+            # We will map it to the new V3 format here
+            #
             newResponse =
                 request:    @request
                 response:   xhr.responseText
@@ -278,10 +299,14 @@
                 statusText: xhr.statusText
 
         createSuccessResponse: ( xhrResponse ) ->
-            if not @xdmSettings?
+            if @transport
+                # Not an XDM call
+                #
                 super( xhrResponse )
 
             else if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+                # Using CORS isnstead of XDM
+                #
                 super( xhrResponse )
 
             else
@@ -338,10 +363,14 @@
                     )
 
         createErrorResponse: ( xhrResponse ) ->
-            if not @xdmSettings?
+            if @transport
+                # Not an XDM call
+                #
                 super( xhrResponse )
 
             else if ( @xdmSettings.cors and ( new XMLHttpRequest() )[ "withCredentials" ]? )
+                # Using CORS instead of XDM
+                #
                 super( xhrResponse )
 
             else
