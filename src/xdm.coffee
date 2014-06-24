@@ -312,11 +312,10 @@
             else
                 # Some XHR don't implement .response so fall-back to .responseText
                 #
-                response = xhrResponse.response || xhrResponse.responseText
+                response = xhrResponse.response || xhrResponse.responseText || xhrResponse.statusText
                 status   = parseInt( xhrResponse.status, 10 )
 
                 if @request.type is "json" and typeof response is "string"
-
                     # Try to parse the JSON response
                     # Can be empty for 204 no content response
                     #
@@ -326,7 +325,7 @@
 
                         catch jsonError
                             console.warn( "[XHR] Failed JSON parse, returning plain text", @request.url )
-                            response = xhrResponse.responseText
+                            response = xhrResponse.response || xhrResponse.responseText || xhrResponse.statusText
 
                 else if @request.type is "xml" and typeof response is "string" and response.substr( 0, 5 ) is "<?xml"
 
@@ -374,9 +373,23 @@
                 super( xhrResponse )
 
             else
+                response = xhrResponse.response || xhrResponse.responseText || xhrResponse.statusText
+
+                if @request.type is "json" and typeof response is "string"
+                    # Try to parse the JSON response
+                    # Can be empty for 204 no content response
+                    #
+                    if response
+                        try
+                            response = JSON.parse( response )
+
+                        catch jsonError
+                            console.warn( "[XHR] Failed JSON parse, returning plain text", @request.url )
+                            response = xhrResponse.response || xhrResponse.responseText || xhrResponse.statusText
+
                 @deferred.reject(
                     request:    @request
-                    response:   xhrResponse.responseText || xhrResponse.statusText
+                    response:   response
                     status:     xhrResponse.status
                     statusText: xhrResponse.statusText
                 )
