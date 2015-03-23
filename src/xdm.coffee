@@ -100,12 +100,16 @@
 
             return remote
 
-        open: ( method, url, username, password ) ->
+        open: ( method, url, async, username, password ) ->
             # NOTE: We are not calling @createTransport here like the normal XHR does
             #
             # Retrieve the XDM settings for the target host
             #
             @xdmSettings = @hostMapping.getXdmSettings( url )
+
+            # XDM calls are always async
+            #
+            async = true
 
             # Check if the host is present in the xdm settings
             #
@@ -114,7 +118,7 @@
                 # Use the super class to create an XHR transport
                 # The existence of an @transport indicates a non XDM call
                 #
-                super( method, url, username, password )
+                super( method, url, async, username, password )
 
             else
                 # If the xdmSettings indicate the server should have CORS and if
@@ -127,7 +131,7 @@
 
                     # Use CORS instead
                     #
-                    super( method, url, username, password )
+                    super( method, url, async, username, password )
                 else
                     # Clear @transport in case someone is reusing this XHR instance (bad boy!)
                     #
