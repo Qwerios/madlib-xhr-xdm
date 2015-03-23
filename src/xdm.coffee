@@ -100,7 +100,7 @@
 
             return remote
 
-        open: ( method, url, user, password ) ->
+        open: ( method, url, username, password ) ->
             # NOTE: We are not calling @createTransport here like the normal XHR does
             #
             # Retrieve the XDM settings for the target host
@@ -114,7 +114,7 @@
                 # Use the super class to create an XHR transport
                 # The existence of an @transport indicates a non XDM call
                 #
-                super( method, url, user, password )
+                super( method, url, username, password )
 
             else
                 # If the xdmSettings indicate the server should have CORS and if
@@ -127,7 +127,7 @@
 
                     # Use CORS instead
                     #
-                    super( method, url, user, password )
+                    super( method, url, username, password )
                 else
                     # Clear @transport in case someone is reusing this XHR instance (bad boy!)
                     #
